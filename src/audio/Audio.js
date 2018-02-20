@@ -27,6 +27,9 @@ function Audio( listener ) {
 	this.hasPlaybackControl = true;
 	this.sourceType = 'empty';
 
+	this.oscFreq = 400;
+
+
 	this.filters = [];
 
 }
@@ -40,6 +43,17 @@ Audio.prototype = Object.assign( Object.create( Object3D.prototype ), {
 		return this.gain;
 
 	},
+
+	setOscillatorSource: function( osc, freq) {
+
+		this.oscFreq = freq;
+		this.hasPlaybackControl = true;
+		this.sourceType = 'oscillator';
+		this.source = osc;
+		this.connect();
+
+		return this;
+	}
 
 	setNodeSource: function ( audioNode ) {
 
@@ -79,16 +93,32 @@ Audio.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 		}
 
-		var source = this.context.createBufferSource();
+		var source;
 
-		source.buffer = this.buffer;
-		source.loop = this.loop;
-		source.onended = this.onEnded.bind( this );
-		source.playbackRate.setValueAtTime( this.playbackRate, this.startTime );
-		this.startTime = this.context.currentTime;
-		source.start( this.startTime, this.offset );
+		if(sourceType = "oscillator")
+		{
+			source = this.context.createOscillator();
+			source.type = 'square';
+			this.m_osc.frequency.setValueAtTime(this.oscFreq, this.startTime);
+			this.startTime = this.context.currentTime;
+			source.start();
 
-		this.isPlaying = true;
+			this.isPlaying = true;
+		}
+		else
+		{
+
+			source = this.context.createBufferSource();
+
+			source.buffer = this.buffer;
+			source.loop = this.loop;
+			source.onended = this.onEnded.bind( this );
+			source.playbackRate.setValueAtTime( this.playbackRate, this.startTime );
+			this.startTime = this.context.currentTime;
+			source.start( this.startTime, this.offset );
+
+			this.isPlaying = true;
+		}
 
 		this.source = source;
 
@@ -103,6 +133,12 @@ Audio.prototype = Object.assign( Object.create( Object3D.prototype ), {
 			console.warn( 'THREE.Audio: this Audio has no playback control.' );
 			return;
 
+		}
+
+		if( this.sourceType == 'oscillator')
+		{
+			console.warn('THREE.Audio: pausing oscillator makes no sense.');
+			return;
 		}
 
 		if ( this.isPlaying === true ) {
